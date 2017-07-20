@@ -1,0 +1,48 @@
+Step 1
+#include <linux/fs.h>
+int register_blkdev(unsigned int major, const char *name);
+  - Returns a freely available major number after allocation.
+void unregister_blkdev(unsigned int major, const char *name);
+  - Deallocates the major number.
+
+Step 2
+#include <linux/blkdev.h>
+struct block_device_operations();
+- Too few compared to character device operations.
+
+Step 3
+To integrate I/O scheduler and read-write implementation,we use request queues for queuing the operations, spin lock to lock access and request functions to process the requests.
+
+Step 4
+Specify the device file name prefix. Here the suffix is "rb".
+Specify the minor numbers for each device. Here we have chosen to start with autoincrementation of 1 for each partition.
+Also specify the max partition by limiting the total number of minors and define device size in units of 512-byte sectors.
+
+Step 5
+<linux/genhd.h>
+Construct the structure struct gendisk() with following functions associated with it -
+void add_disk(struct gendisk *disk);
+void del_gendisk(struct gendisk *disk);
+
+Step 4.5 - Prior to add_disk()
+the various fields of struct gendisk need to be initialized, either directly or using various functions like set_capacity(). major, first_minor, fops, queue, disk_name which are the minimal fields to be initialized directly. And even before the initialization of these fields, the struct gendisk needs to be allocated using the function:
+struct gendisk *alloc_disk(int minors);
+The inverse for this function can be:
+void put_disk(struct gendisk *disk);
+
+Initialize the request queue, cleanup and request functions.
+  - struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+  - void blk_cleanup_queue(struct request_queue *);
+  - void request_fn(struct request_queue *q);
+  - struct request *blk_fetch_request(struct request_queue *q);
+
+Step 6
+Set up the rb_transfer() function which parses a struct request and accordingly transfers the data. The supporting request functions are defined as follows:
+rq_data_dir(req);
+blk_req_pos(req);
+blk_req_sectors(req);
+rq_for_each_segment(bv, req, iter)
+  - This function iterates over the struct request(req) using iter and extracts the individual buffer information into the struct bio_vec(bv:basic I/O vector).
+  On each extraction, corresponding data transfer is done, based on the operation type, using one of the following function prototypes from ram_device.c -
+    void ramdevice_write(sector_t sector_off, u8 *buffer, unsigned int sectors);
+    void ramdevice_read(sector_t sector_off, u8 *buffer, unsigned int sectors);

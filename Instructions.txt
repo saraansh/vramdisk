@@ -1,0 +1,51 @@
+ls -l /dev | head
+Lists all the files in RAM
+
+make
+Build all files and merge them into blockdrv.ko
+
+make clean
+Clean all built files.
+
+insmod blockdrv.ko
+Load the driver and creates device files representing the disk on 512KBs of RAM (3 primary and 3 logical partitions)
+
+rmmod blockdrv
+Unload & erase everything.
+
+ls -l /dev/rb
+Entire disk of 512KB size
+
+ls -l /dev/rb* or ls -l | grep rb
+Display all partitions created.
+
+dd if=/dev/rb of=dor
+Disk Dump - Used to read the entire disk.
+
+dd if=/dev/zero of=/dev/rb1 count=1
+Zero out the first sector of the disk's first partition.
+
+cat > /dev/rb1
+<Statements> ^Z
+Write into the first partition of disk rb.
+
+xxd /dev/rb1 | more OR xxd /dev/rb1 | less
+Displays the initial contents of the first partition.
+
+fdisk -l /dev/rb
+Display the partition info for the disk.
+
+mkfs.vfat /dev/rb3
+Format the third partition as vfat filesystem.
+
+mkdir /media/cyanide/MyDrive
+mount /dev/rb3 /media/cyanide/MyDrive
+Mount the newly formatted partition.
+
+df
+Shows the partition mounted at/mnt.
+
+Store files here but remember since the disk has been loaded onto RAM, files will be non-persistent.
+
+unmount /media/cyanide/MyDrive
+Unmount the disk before using "rmmod blockdrv".
